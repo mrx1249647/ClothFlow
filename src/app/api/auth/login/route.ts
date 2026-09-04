@@ -75,8 +75,14 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ message: "تم تسجيل الدخول بنجاح", user: { id: user.id, name: user.name, email: user.email, role: user.role, avatarUrl: user.avatar_url } });
-  } catch (error) {
-    console.error("login-error", error);
-    return NextResponse.json({ message: "حدث خطأ في الخادم" }, { status: 500 });
-  }
+ } catch (error) {
+  console.error("login-error", error);
+
+  return NextResponse.json(
+    {
+      message: "حدث خطأ في الخادم",
+      error: error instanceof Error ? error.message : String(error),
+    },
+    { status: 500 },
+  );
 }
