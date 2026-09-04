@@ -7,7 +7,7 @@ export async function GET() {
 
   if (!user) {
     await clearSessionCookie();
-    return NextResponse.json({ authenticated: false }, { status: 401 });
+    return NextResponse.json({ authenticated: false }, { status: 200 });
   }
 
   return NextResponse.json({ authenticated: true, user });

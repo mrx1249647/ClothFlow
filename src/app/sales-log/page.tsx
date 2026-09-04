@@ -57,7 +57,7 @@ export default function SalesLogPage() {
                     <TableCell>{sale.customer}</TableCell>
                     <TableCell>{sale.quantity}</TableCell>
                     <TableCell>{sale.sold_by}</TableCell>
-                    <TableCell>{Number(sale.total).toLocaleString()} ر.س</TableCell>
+                    <TableCell>{Number(sale.total).toLocaleString()} ج.م</TableCell>
                     <TableCell>{new Date(sale.created_at).toLocaleString("ar-EG")}</TableCell>
                   </TableRow>
                 ))}

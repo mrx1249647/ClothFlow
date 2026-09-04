@@ -23,11 +23,11 @@ export async function POST(request: Request) {
 
     const { email, password } = parsed.data;
     const userResult = await query(
-      `SELECT id, name, email, password_hash, role, status FROM users WHERE email = $1;`,
+      `SELECT id, name, email, password_hash, role, status, avatar_url FROM users WHERE email = $1;`,
       [email],
     );
 
-    const user = userResult.rows[0];
+    const user = userResult.rows[0] as { id: string; name: string; email: string; password_hash: string | null; role: "admin" | "manager"; status: string; avatar_url?: string | null } | undefined;
     if (!user) {
       return NextResponse.json({ message: "البريد الإلكتروني غير موجود" }, { status: 401 });
     }
@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       name: user.name,
       email: user.email,
       role: user.role,
+      avatarUrl: user.avatar_url as string | null,
     });
 
     const cookieStore = await cookies();
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
       maxAge: 60 * 60 * 24 * 7,
     });
 
-    return NextResponse.json({ message: "تم تسجيل الدخول بنجاح", user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    return NextResponse.json({ message: "تم تسجيل الدخول بنجاح", user: { id: user.id, name: user.name, email: user.email, role: user.role, avatarUrl: user.avatar_url } });
   } catch (error) {
     console.error("login-error", error);
     return NextResponse.json({ message: "حدث خطأ في الخادم" }, { status: 500 });

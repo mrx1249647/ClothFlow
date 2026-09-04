@@ -38,7 +38,8 @@ export default function RegisterPage() {
     async function checkSession() {
       try {
         const res = await fetch("/api/auth/session", { cache: "no-store" });
-        if (res.ok) {
+        const data = await res.json();
+        if (res.ok && data.authenticated) {
           router.replace("/dashboard");
         }
       } catch {
@@ -190,9 +191,6 @@ export default function RegisterPage() {
 
                       <Button type="submit" fullWidth variant="contained" size="large" disabled={pending} sx={{ py: 1.5, borderRadius: 3 }}>
                         {pending ? "جاري إنشاء الحساب..." : "إنشاء الحساب"}
-                      </Button>
-                      <Button component="a" href="/api/auth/google" fullWidth variant="outlined" size="large" sx={{ py: 1.5, borderRadius: 3 }}>
-                        التسجيل باستخدام Google
                       </Button>
                     </Stack>
                   </Box>

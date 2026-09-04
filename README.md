@@ -1,42 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ClothFlow
 
-## Getting Started
+لوحة إدارة متجر ملابس مبنية بـNext.js، Neon PostgreSQL، ومهيأة للنشر على Cloudflare Workers عبر OpenNext.
 
-First, run the development server:
+## التشغيل المحلي
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## النشر على Cloudflare
 
-## Browser and environment
+بعد تسجيل الدخول إلى Cloudflare:
 
-Use a current version of Microsoft Edge or another Chromium-based browser. Edge 92 is not supported by Next.js 16 and can report `Unexpected token '{'` while loading the development bundle.
+```bash
+npx wrangler login
+npm run cloudflare:deploy
+```
 
-Copy `.env.example` to `.env.local` and replace every placeholder with local secrets. Never commit `.env.local` or expose its database, JWT, or admin password values.
+للمعاينة المحلية:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run cloudflare:dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## متغيرات البيئة والأسرار
 
-## Learn More
+أضفها في Cloudflare Workers Settings أو عبر `wrangler secret put`:
 
-To learn more about Next.js, take a look at the following resources:
+- `DATABASE_URL`: رابط Neon pooled connection string مع SSL.
+- `JWT_SECRET`: قيمة عشوائية لا تقل عن 32 حرفًا.
+- `NEXT_PUBLIC_APP_NAME`: `ClothFlow`.
+- `NEXT_PUBLIC_ADMIN_EMAIL`: بريد المدير.
+- `ADMIN_DEFAULT_PASSWORD`: كلمة مرور المدير.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+التسجيل حاليًا ينشئ الحساب نشطًا مباشرة بدون تحقق بريد.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ملاحظات مهمة
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- تم استخدام Neon HTTP بدل `pg` لأن Cloudflare Workers لا يدعم اتصال PostgreSQL TCP التقليدي.
+- يتم إنشاء الجداول وإضافة الأعمدة المطلوبة تلقائيًا عند أول طلب API.
+- لا ترفع `.env.local` أو أي مفاتيح سرية إلى GitHub.
+- غيّر أي بيانات اتصال أو كلمات مرور ظهرت خارج لوحة الأسرار.

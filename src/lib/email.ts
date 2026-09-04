@@ -15,7 +15,7 @@ export async function sendAccountEmail({
       console.info(`[email-preview] ${to} | ${subject}\n${html}`);
       return;
     }
-    throw new Error("RESEND_API_KEY and EMAIL_FROM are required to send account emails.");
+    throw new Error("RESEND_API_KEY and EMAIL_FROM are required in production.");
   }
 
   const response = await fetch("https://api.resend.com/emails", {
@@ -24,7 +24,5 @@ export async function sendAccountEmail({
     body: JSON.stringify({ from, to: [to], subject, html }),
   });
 
-  if (!response.ok) {
-    throw new Error(`Email provider returned ${response.status}.`);
-  }
+  if (!response.ok) throw new Error(`Email provider returned ${response.status}.`);
 }

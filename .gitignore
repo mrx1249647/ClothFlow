@@ -16,6 +16,10 @@
 # next.js
 /.next/
 /out/
+/.open-next/
+/wrangler.toml
+/data/*.json
+/data/outbox.log
 
 # production
 /build

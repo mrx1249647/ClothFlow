@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { initializeDatabase, logAudit, logNotification, query } from "@/lib/db";
 import { saleSchema } from "@/lib/validators";
 import { isSameOrigin } from "@/lib/request-security";
+import { randomUUID } from "node:crypto";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -32,33 +33,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: parsed.error.issues[0]?.message || "بيانات البيع غير صالحة" }, { status: 400 });
     }
 
-    const { productId, quantity, customer, soldBy } = parsed.data;
-    const productResult = await query(`SELECT * FROM products WHERE id = $1;`, [productId]);
-    const product = productResult.rows[0];
-
-    if (!product) {
-      return NextResponse.json({ message: "المنتج غير موجود" }, { status: 404 });
+    const { items, customer, soldBy, discount, discountReason, shopName } = parsed.data;
+    const orderId = randomUUID();
+    const lines: { product: { id: string; name: string; price: number; stock: number; sizes?: { label: string; stock: number }[] }; size: string; quantity: number; subtotal: number }[] = [];
+    for (const item of items) {
+      const productResult = await query(`SELECT * FROM products WHERE id = $1;`, [item.productId]);
+      const product = productResult.rows[0] as { id: string; name: string; price: number; stock: number; sizes?: { label: string; stock: number }[] } | undefined;
+      if (!product) return NextResponse.json({ message: "أحد المنتجات غير موجود" }, { status: 404 });
+      const size = product.sizes?.find((availableSize) => availableSize.label === item.size);
+      if (!size || size.stock < item.quantity) return NextResponse.json({ message: `المقاس ${item.size} غير متوفر بالكمية المطلوبة من ${product.name}` }, { status: 400 });
+      lines.push({ product, size: item.size, quantity: item.quantity, subtotal: Number(product.price) * item.quantity });
     }
-
-    if (product.stock < quantity) {
-      return NextResponse.json({ message: "الكمية المطلوبة تتجاوز المخزون الحالي" }, { status: 400 });
+    const subtotal = lines.reduce((sum, line) => sum + line.subtotal, 0);
+    if (discount > subtotal) return NextResponse.json({ message: "الخصم لا يمكن أن يتجاوز إجمالي الفاتورة" }, { status: 400 });
+    const saleResults = [];
+    for (const line of lines) {
+      const lineDiscount = subtotal ? discount * (line.subtotal / subtotal) : 0;
+      const saleResult = await query(`INSERT INTO sales (product_id, quantity, total, customer, sold_by, order_id, discount, discount_reason, size, shop_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;`, [line.product.id, line.quantity, line.subtotal - lineDiscount, customer, soldBy, orderId, lineDiscount, discountReason || null, line.size, shopName]);
+      saleResults.push(saleResult.rows[0]);
+      const updatedSizes = (line.product.sizes || []).map((availableSize) => availableSize.label === line.size ? { ...availableSize, stock: availableSize.stock - line.quantity } : availableSize);
+      await query(`UPDATE products SET stock = stock - $1, sizes = $2 WHERE id = $3;`, [line.quantity, JSON.stringify(updatedSizes), line.product.id]);
     }
-
-    const total = Number(product.price) * Number(quantity);
-    const saleResult = await query(
-      `INSERT INTO sales (product_id, quantity, total, customer, sold_by) VALUES ($1, $2, $3, $4, $5) RETURNING *;`,
-      [productId, quantity, total, customer, soldBy],
-    );
-
-    await query(`UPDATE products SET stock = stock - $1 WHERE id = $2;`, [quantity, productId]);
+    const total = subtotal - discount;
     await logNotification({
       type: "sale",
       title: "تمت عملية بيع جديدة",
-      description: `${customer} اشترى ${quantity} وحدات من ${product.name} بقيمة ${total} ر.س`,
+      description: `${customer} اشترى ${items.length} منتجات بقيمة ${total} ج.م`,
     });
-    await logAudit(`${user.name} سجل بيعًا: ${customer} - ${product.name}`);
+    await logAudit(`${user.name} سجل فاتورة بيع للعميل: ${customer}`);
 
-    return NextResponse.json({ sale: saleResult.rows[0], message: "تم تسجيل البيع بنجاح" }, { status: 201 });
+    return NextResponse.json({ sales: saleResults, total, message: "تم تسجيل البيع بنجاح" }, { status: 201 });
   } catch (error) {
     console.error("sales-error", error);
     return NextResponse.json({ message: "حدث خطأ في الخادم" }, { status: 500 });

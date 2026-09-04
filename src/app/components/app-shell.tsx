@@ -41,7 +41,7 @@ const sections = [
   { label: "الإشعارات", href: "/notifications", icon: <NotificationsRoundedIcon /> },
 ];
 
-export function AppShell({ title, subtitle, user, children }: { title: string; subtitle?: string; user?: { name?: string; role?: string }; children: React.ReactNode }) {
+export function AppShell({ title, subtitle, user, children }: { title: string; subtitle?: string; user?: { name?: string; role?: string; avatarUrl?: string | null }; children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const theme = useTheme();
@@ -100,7 +100,7 @@ export function AppShell({ title, subtitle, user, children }: { title: string; s
               <Select size="small" value={themeName} onChange={(event) => setThemeName(event.target.value as keyof typeof themeOptions)} aria-label="اختيار الثيم" sx={{ minWidth: 132 }}>
                 {Object.entries(themeOptions).map(([key, option]) => <MenuItem key={key} value={key}>{option.label}</MenuItem>)}
               </Select>
-              <Avatar sx={{ bgcolor: "primary.main" }}><PersonRoundedIcon /></Avatar>
+              <Avatar src={user?.avatarUrl || undefined} sx={{ bgcolor: "primary.main" }}>{user?.avatarUrl ? null : <PersonRoundedIcon />}</Avatar>
               <Chip label={user?.role === "admin" ? "مدير النظام" : user?.name || "المتجر"} color="primary" variant="outlined" />
             </Stack>
           </Toolbar>

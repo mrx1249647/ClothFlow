@@ -32,10 +32,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: parsed.error.issues[0]?.message || "بيانات المنتج غير صالحة" }, { status: 400 });
     }
 
-    const { name, category, sku, stock, price } = parsed.data;
+    const { name, category, stock, price, imageUrl } = parsed.data;
     const result = await query(
-      `INSERT INTO products (name, category, sku, stock, price) VALUES ($1, $2, $3, $4, $5) RETURNING *;`,
-      [name, category, sku, stock, price],
+      `INSERT INTO products (name, category, stock, price, image_url, sizes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;`,
+      [name, category, stock, price, imageUrl || null, JSON.stringify(parsed.data.sizes)],
     );
 
     await logNotification({

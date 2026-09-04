@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev --webpack --hostname 0.0.0.0",
     "build": "next build --webpack",
-    "start": "next start",
+    "start": "next start --hostname 0.0.0.0",
+    "cloudflare:build": "opennextjs-cloudflare build",
+    "cloudflare:deploy": "opennextjs-cloudflare build && wrangler deploy",
+    "cloudflare:dev": "opennextjs-cloudflare build && wrangler dev",
     "lint": "eslint"
   },
   "dependencies": {
@@ -15,21 +18,22 @@
     "@fontsource/inter": "^5.3.0",
     "@mui/icons-material": "^9.4.0",
     "@mui/material": "^9.4.0",
-    "@types/pg": "^8.23.1",
+    "@neondatabase/serverless": "^1.1.0",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.10",
     "next": "^16.3.3",
-    "pg": "^8.23.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.6",
     "@types/node": "^24.6.0",
     "@types/react": "^19.2.6",
     "@types/react-dom": "^19.2.1",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.3",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "wrangler": "^4.129.0"
   }
 }

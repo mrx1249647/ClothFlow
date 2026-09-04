@@ -6,6 +6,7 @@ export type SessionUser = {
   name: string;
   email: string;
   role: "admin" | "manager";
+  avatarUrl?: string | null;
 };
 
 const getJwtSecret = () => {
@@ -22,6 +23,7 @@ export async function createSessionToken(user: SessionUser) {
     email: user.email,
     name: user.name,
     role: user.role,
+    avatarUrl: user.avatarUrl,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -37,6 +39,7 @@ export async function verifySessionToken(token: string) {
     name: String(payload.name ?? ""),
     email: String(payload.email ?? ""),
     role: String(payload.role ?? "manager") as SessionUser["role"],
+    avatarUrl: payload.avatarUrl ? String(payload.avatarUrl) : null,
   } satisfies SessionUser;
 }
 

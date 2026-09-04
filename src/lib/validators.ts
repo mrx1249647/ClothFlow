@@ -14,14 +14,17 @@ export const loginSchema = z.object({
 export const productSchema = z.object({
   name: z.string().min(2),
   category: z.string().min(2),
-  sku: z.string().min(3),
   stock: z.coerce.number().min(0),
   price: z.coerce.number().min(0),
+  imageUrl: z.string().max(2_000_000).optional().default(""),
+  sizes: z.array(z.object({ label: z.string().min(1).max(10), stock: z.coerce.number().int().min(0) })).default([]),
 });
 
 export const saleSchema = z.object({
-  productId: z.string().min(1),
-  quantity: z.coerce.number().min(1),
+  items: z.array(z.object({ productId: z.string().min(1), size: z.string().min(1).max(10), quantity: z.coerce.number().int().min(1) })).min(1),
   customer: z.string().min(2),
   soldBy: z.string().min(2),
+  discount: z.coerce.number().min(0).default(0),
+  discountReason: z.string().max(200).optional().default(""),
+  shopName: z.string().min(2).max(120),
 });

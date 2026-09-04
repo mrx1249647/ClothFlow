@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Card,
   CardContent,
+  Chip,
   Grid,
   Stack,
   Table,
@@ -20,12 +22,12 @@ import {
 } from "@mui/material";
 import { AppShell } from "@/app/components/app-shell";
 
-type Product = { id: string; name: string; category: string; sku: string; stock: number; price: number };
+type Product = { id: string; name: string; category: string; image_url?: string | null; stock: number; price: number; sizes?: { label: string; stock: number }[] };
 
 export default function InventoryPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
-  const [form, setForm] = useState({ name: "", category: "", sku: "", stock: "", price: "" });
+  const [form, setForm] = useState({ name: "", category: "", stock: "", price: "", imageUrl: "", sizesText: "" });
   const [status, setStatus] = useState("");
 
   async function loadProducts() {
@@ -47,17 +49,21 @@ export default function InventoryPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const sizes = form.sizesText.split(",").map((entry) => {
+      const [label, stock] = entry.split(":").map((value) => value.trim());
+      return { label, stock: Number(stock) };
+    }).filter((size) => size.label && Number.isInteger(size.stock) && size.stock >= 0);
     const res = await fetch("/api/products", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, sizes, stock: sizes.reduce((sum, size) => sum + size.stock, 0) }),
     });
     const data = await res.json();
     if (!res.ok) {
       setStatus(data.message || "تعذر حفظ المنتج");
       return;
     }
-    setForm({ name: "", category: "", sku: "", stock: "", price: "" });
+    setForm({ name: "", category: "", stock: "", price: "", imageUrl: "", sizesText: "" });
     setStatus("تم حفظ المنتج بنجاح");
     loadProducts();
   }
@@ -78,13 +84,25 @@ export default function InventoryPage() {
                   <TextField fullWidth label="الفئة" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4 }}>
-                  <TextField fullWidth label="SKU" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
-                  <TextField fullWidth label="الكمية" type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
+                  <TextField fullWidth label="إجمالي الكمية" type="number" value={form.stock} slotProps={{ htmlInput: { readOnly: Boolean(form.sizesText) } }} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField fullWidth label="السعر" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField fullWidth label="المقاسات والكميات" placeholder="S:10, L:8, XL:4 أو 36:2, 40:5" value={form.sizesText} onChange={(e) => setForm({ ...form, sizesText: e.target.value })} helperText="افصل بين المقاسات بفاصلة، وبين المقاس والكمية بنقطتين" />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Button component="label" variant="outlined" fullWidth sx={{ height: 56 }}>
+                    {form.imageUrl ? "تم اختيار صورة المنتج" : "اختيار صورة المنتج"}
+                    <input hidden accept="image/*" type="file" onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => setForm((current) => ({ ...current, imageUrl: String(reader.result) }));
+                      reader.readAsDataURL(file);
+                    }} />
+                  </Button>
                 </Grid>
                 <Grid size={{ xs: 12 }}>
                   <Button type="submit" variant="contained">حفظ المنتج</Button>
@@ -103,9 +121,10 @@ export default function InventoryPage() {
                 <TableRow>
                   <TableCell>اسم المنتج</TableCell>
                   <TableCell>الفئة</TableCell>
-                  <TableCell>SKU</TableCell>
                   <TableCell>الكمية</TableCell>
                   <TableCell>السعر</TableCell>
+                  <TableCell>الصورة</TableCell>
+                    <TableCell>المقاسات</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -113,9 +132,10 @@ export default function InventoryPage() {
                   <TableRow key={product.id}>
                     <TableCell>{product.name}</TableCell>
                     <TableCell>{product.category}</TableCell>
-                    <TableCell>{product.sku}</TableCell>
                     <TableCell>{product.stock}</TableCell>
-                    <TableCell>{Number(product.price).toLocaleString()} ر.س</TableCell>
+                    <TableCell>{Number(product.price).toLocaleString()} ج.م</TableCell>
+                    <TableCell><Avatar src={product.image_url || undefined} variant="rounded" sx={{ width: 44, height: 44 }} /></TableCell>
+                    <TableCell><Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap" }}>{product.sizes?.map((size) => <Chip key={size.label} size="small" label={`${size.label}: ${size.stock}`} />)}</Stack></TableCell>
                   </TableRow>
                 ))}
               </TableBody>

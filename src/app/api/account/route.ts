@@ -24,7 +24,7 @@ export async function PATCH(request: Request) {
     }
 
     const current = await query("SELECT name, email, password_hash FROM users WHERE id = $1", [user.id]);
-    const account = current.rows[0];
+    const account = current.rows[0] as { name: string; email: string; password_hash: string | null } | undefined;
     if (!account) {
       return NextResponse.json({ message: "الحساب غير موجود" }, { status: 404 });
     }

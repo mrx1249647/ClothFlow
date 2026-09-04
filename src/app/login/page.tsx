@@ -41,7 +41,8 @@ export default function LoginPage() {
     async function checkSession() {
       try {
         const res = await fetch("/api/auth/session", { cache: "no-store" });
-        if (res.ok) {
+        const data = await res.json();
+        if (res.ok && data.authenticated) {
           router.replace("/dashboard");
           return;
         }
@@ -188,9 +189,6 @@ export default function LoginPage() {
 
                       <Button type="submit" fullWidth variant="contained" size="large" disabled={pending} sx={{ py: 1.5, borderRadius: 3 }}>
                         {pending ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
-                      </Button>
-                      <Button component="a" href="/api/auth/google" fullWidth variant="outlined" size="large" sx={{ py: 1.5, borderRadius: 3 }}>
-                        المتابعة باستخدام Google
                       </Button>
                     </Stack>
                   </Box>

@@ -27,7 +27,7 @@ body {
   flex-direction: column;
   color: var(--foreground);
   background: radial-gradient(circle at top, #f6faf8 0%, #edf4f1 36%, #f2f5f7 100%);
-  font-family: var(--font-inter), "Segoe UI", sans-serif;
+  font-family: "Inter", "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -185,5 +185,37 @@ img {
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .invoice-print,
+  .invoice-print * {
+    visibility: visible;
+  }
+
+  .invoice-print {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 28px;
+    color: #304442;
+    background: #fffdfb;
+    direction: rtl;
+    box-shadow: none !important;
+    border: 2px solid #d9e8e2;
+  }
+
+  .invoice-print button {
+    display: none;
   }
 }
