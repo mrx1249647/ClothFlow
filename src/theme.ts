@@ -1,16 +1,24 @@
 import { createTheme, type Theme } from "@mui/material/styles";
 
 export const themeOptions = {
+  dynamic: { label: "نسيم متغير", primary: "#5f8f89", secondary: "#d6a36a", background: "#f5f8f6" },
   ocean: { label: "بحري", primary: "#176b87", secondary: "#ef8354", background: "#f2f8fa" },
   forest: { label: "غابة", primary: "#397d54", secondary: "#d9a441", background: "#f4f8f1" },
   sunset: { label: "غروب", primary: "#b84a62", secondary: "#e58f65", background: "#fff6f0" },
   lavender: { label: "لافندر", primary: "#665191", secondary: "#e27d9b", background: "#f8f5fc" },
 } as const;
 
+export const dynamicThemePalettes = [
+  { primary: "#5f8f89", secondary: "#d6a36a", background: "#f5f8f6" },
+  { primary: "#7187a6", secondary: "#c58d83", background: "#f5f7fa" },
+  { primary: "#7d8f67", secondary: "#c99b72", background: "#f7f8f2" },
+  { primary: "#82759b", secondary: "#cf9b9b", background: "#f8f6fa" },
+] as const;
+
 export type ThemeName = keyof typeof themeOptions;
 
-export function buildTheme(name: ThemeName): Theme {
-  const selected = themeOptions[name];
+export function buildTheme(name: ThemeName, dynamicIndex = 0): Theme {
+  const selected = name === "dynamic" ? dynamicThemePalettes[dynamicIndex % dynamicThemePalettes.length] : themeOptions[name];
   return createTheme({
   palette: {
     mode: "light",

@@ -6,10 +6,12 @@ import {
   Card,
   CardContent,
   Avatar,
+  Box,
   Button,
   Dialog,
   DialogContent,
   DialogTitle,
+  Divider,
   Stack,
   Table,
   TableBody,
@@ -76,7 +78,25 @@ export default function SalesLogPage() {
           </CardContent>
         </Card>
       </Stack>
-      <Dialog open={Boolean(selected)} onClose={() => setSelected(null)} fullWidth maxWidth="sm"><DialogTitle>تفاصيل عملية البيع</DialogTitle><DialogContent><Stack spacing={1.5}>{selected ? <><Avatar src={selected.image_url || undefined} variant="rounded" sx={{ width: 96, height: 96 }} /><Typography>المنتج: {selected.product_name}</Typography><Typography>المقاس: {selected.size || "غير محدد"}</Typography><Typography>المحل: {selected.shop_name || "غير محدد"}</Typography><Typography>العميل: {selected.customer}</Typography><Typography>البائع: {selected.sold_by}</Typography><Typography>الكمية: {selected.quantity}</Typography><Typography>الخصم: {Number(selected.discount || 0).toLocaleString()} ج.م</Typography><Typography>سبب الخصم: {selected.discount_reason || "بدون سبب"}</Typography><Typography>الإجمالي بعد الخصم: {Number(selected.total).toLocaleString()} ج.م</Typography><Button variant="contained" startIcon={<PrintRoundedIcon />} onClick={() => window.print()}>طباعة / حفظ PDF</Button></> : null}</Stack></DialogContent></Dialog>
+      <Dialog open={Boolean(selected)} onClose={() => setSelected(null)} fullWidth maxWidth="sm">
+        <DialogTitle>تفاصيل عملية البيع</DialogTitle>
+        <DialogContent>
+          {selected ? <Box className="invoice-print" sx={{ p: { xs: 1, sm: 2 }, color: "text.primary" }}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={2} sx={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+                <Box><Typography variant="overline" color="primary.main">فاتورة بيع</Typography><Typography variant="h5" sx={{ fontWeight: 900 }}>{selected.shop_name || "ClothFlow"}</Typography><Typography variant="body2" color="text.secondary">إدارة المبيعات والمخزون</Typography></Box>
+                <Avatar src={selected.image_url || undefined} variant="rounded" sx={{ width: 72, height: 72 }} />
+              </Stack>
+              <Divider />
+              <Stack direction="row" spacing={2} sx={{ justifyContent: "space-between", flexWrap: "wrap" }}><Typography variant="body2">رقم العملية: <strong>{selected.id.slice(0, 8).toUpperCase()}</strong></Typography><Typography variant="body2">التاريخ: <strong>{new Date(selected.created_at).toLocaleString("ar-EG")}</strong></Typography></Stack>
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover" }}><Stack spacing={0.75}><Typography>العميل: <strong>{selected.customer}</strong></Typography><Typography>البائع: <strong>{selected.sold_by}</strong></Typography></Stack></Box>
+              <Box className="invoice-table" sx={{ border: 1, borderColor: "divider", borderRadius: 2, overflow: "hidden" }}><Stack direction="row" sx={{ p: 1.5, bgcolor: "primary.main", color: "primary.contrastText", justifyContent: "space-between" }}><Typography>المنتج</Typography><Typography>الإجمالي</Typography></Stack><Stack direction="row" spacing={1.5} sx={{ p: 1.5, alignItems: "center", justifyContent: "space-between" }}><Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}><Avatar src={selected.image_url || undefined} variant="rounded" sx={{ width: 48, height: 48 }} /><Box><Typography sx={{ fontWeight: 800 }}>{selected.product_name}</Typography><Typography variant="body2" color="text.secondary">المقاس: {selected.size || "غير محدد"} · الكمية: {selected.quantity}</Typography></Box></Stack><Typography sx={{ fontWeight: 800 }}>{Number(selected.total).toLocaleString()} ج.م</Typography></Stack></Box>
+              <Stack spacing={0.75} sx={{ alignItems: "flex-end" }}><Typography>الخصم: {Number(selected.discount || 0).toLocaleString()} ج.م</Typography><Typography variant="body2" color="text.secondary">سبب الخصم: {selected.discount_reason || "بدون سبب"}</Typography><Divider sx={{ width: "100%", my: 0.5 }} /><Typography variant="h6" sx={{ fontWeight: 900 }}>الإجمالي المستحق: {Number(selected.total).toLocaleString()} ج.م</Typography></Stack>
+              <Button className="invoice-print-action" variant="contained" startIcon={<PrintRoundedIcon />} onClick={() => window.print()}>طباعة / حفظ PDF</Button>
+            </Stack>
+          </Box> : null}
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

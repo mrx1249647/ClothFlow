@@ -207,15 +207,20 @@ img {
     inset: 0;
     width: 100%;
     margin: 0 !important;
-    padding: 28px;
+    padding: 32px;
     color: #304442;
     background: #fffdfb;
     direction: rtl;
     box-shadow: none !important;
-    border: 2px solid #d9e8e2;
+    border: 1px solid #d9e8e2;
+    border-radius: 18px;
   }
 
-  .invoice-print button {
+  .invoice-print-action {
     display: none;
+  }
+
+  .invoice-print .invoice-table {
+    border-color: #d9e8e2;
   }
 }
