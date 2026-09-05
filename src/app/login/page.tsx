@@ -24,20 +24,22 @@ import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 
-const defaultAdminEmail = "admin@clothflow.com";
-const defaultAdminPassword = "";
-
 export default function LoginPage() {
   const router = useRouter();
   const theme = useTheme();
-  const [email, setEmail] = useState(defaultAdminEmail);
-  const [password, setPassword] = useState(defaultAdminPassword);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const savedEmail = window.localStorage.getItem("clothflow-last-email");
+      if (savedEmail && savedEmail !== "admin@clothflow.com") setEmail(savedEmail);
+      if (savedEmail === "admin@clothflow.com") window.localStorage.removeItem("clothflow-last-email");
+    }, 0);
     async function checkSession() {
       try {
         const res = await fetch("/api/auth/session", { cache: "no-store" });
@@ -54,6 +56,7 @@ export default function LoginPage() {
     }
 
     checkSession();
+    return () => window.clearTimeout(timer);
   }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -75,6 +78,7 @@ export default function LoginPage() {
       return;
     }
 
+    window.localStorage.setItem("clothflow-last-email", email.trim().toLowerCase());
     router.push("/dashboard");
     router.refresh();
   }

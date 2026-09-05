@@ -11,13 +11,18 @@ export async function POST(request: Request) {
     const body = await request.json();
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     if (!email || !email.includes("@")) return NextResponse.json({ message: "أدخل بريدًا إلكترونيًا صالحًا" }, { status: 400 });
-    const account = await query(`SELECT id, name, email FROM users WHERE LOWER(email) = $1;`, [email]);
+    const account = await query(`SELECT id, name, email, password_reset_code_expires FROM users WHERE LOWER(email) = $1;`, [email]);
     if (account.rowCount) {
+      const expiresAt = account.rows[0].password_reset_code_expires;
+      if (expiresAt && new Date(String(expiresAt)) > new Date()) {
+        const retryAfter = Math.max(1, Math.ceil((new Date(String(expiresAt)).getTime() - Date.now()) / 1000));
+        return NextResponse.json({ message: "تم إرسال رمز مؤخرًا. انتظر انتهاء المؤقت قبل طلب رمز جديد.", retryAfter }, { status: 429 });
+      }
       const code = createVerificationCode();
       await query(`UPDATE users SET password_reset_code_hash = $1, password_reset_code_expires = NOW() + INTERVAL '10 minutes', password_reset_attempts = 0 WHERE id = $2;`, [hashVerificationCode(code), account.rows[0].id]);
       await sendAccountEmail({ to: email, subject: "رمز إعادة تعيين كلمة مرور ClothFlow", html: `<div dir="rtl"><h2>إعادة تعيين كلمة المرور</h2><p>مرحبًا ${String(account.rows[0].name)},</p><p>رمز التحقق المؤقت الخاص بك:</p><p style="font-size:32px;font-weight:700;letter-spacing:8px">${code}</p><p>ينتهي الرمز خلال 10 دقائق. إذا لم تطلب ذلك، تجاهل الرسالة.</p></div>` });
     }
-    return NextResponse.json({ message: "إذا كان البريد مسجلًا، فسيصلك رمز تحقق خلال لحظات" });
+    return NextResponse.json({ message: "إذا كان البريد مسجلًا، فسيصلك رمز تحقق خلال لحظات", retryAfter: 600 });
   } catch (error) {
     console.error("password-reset-request-error", error);
     return NextResponse.json({ message: "تعذر إرسال الرمز حاليًا" }, { status: 500 });
