@@ -1,4 +1,4 @@
-import { Box, Button, Container, Stack, Typography } from "@mui/material";
+import { Box, Container, Stack, Typography } from "@mui/material";
 
 export default function HomePage() {
   return (
@@ -8,7 +8,7 @@ export default function HomePage() {
           <Typography variant="h1" sx={{ fontWeight: 900, fontSize: { xs: "3rem", md: "5rem" }, color: "primary.main" }}>ClothFlow</Typography>
           <Typography variant="h4" sx={{ fontWeight: 800 }}>إدارة مخزون ومبيعات متجر الملابس في مكان واحد</Typography>
           <Typography color="text.secondary" sx={{ maxWidth: 620 }}>منصة SaaS تساعدك على متابعة المنتجات والمبيعات والفواتير والإشعارات لكل متجر وحساب بشكل مستقل.</Typography>
-          <Button href="/login" variant="contained" size="large">تسجيل الدخول إلى المنصة</Button>
+          <a href="/login" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 46, padding: "0 24px", borderRadius: 12, background: "#176b87", color: "#ffffff", fontWeight: 700, textDecoration: "none" }}>تسجيل الدخول إلى المنصة</a>
         </Stack>
       </Container>
     </Box>
