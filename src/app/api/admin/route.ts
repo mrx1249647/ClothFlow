@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 
 import { getSessionUser } from "@/lib/auth";
 import { initializeDatabase, logAudit, logNotification, query } from "@/lib/db";
@@ -33,6 +34,15 @@ export async function POST(request: Request) {
       if (!trial.rowCount) return NextResponse.json({ message: "لا يمكن فتح تجربة لهذا الحساب" }, { status: 400 });
       await logAudit(user.id, `${user.name} فتح فترة تجريبية 30 يومًا للحساب`);
       return NextResponse.json({ message: "تم فتح فترة تجريبية 30 يومًا" });
+    }
+
+    if (action === "password") {
+      const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
+      if (!userId || newPassword.length < 8) return NextResponse.json({ message: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" }, { status: 400 });
+      await initializeDatabase();
+      await query(`UPDATE users SET password_hash = $1 WHERE id = $2 AND role <> 'admin';`, [await bcrypt.hash(newPassword, 12), userId]);
+      await logAudit(user.id, `${user.name} غيّر كلمة مرور حساب من لوحة الإدارة`);
+      return NextResponse.json({ message: "تم تغيير كلمة مرور الحساب" });
     }
 
     if (action === "delete") {

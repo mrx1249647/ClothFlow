@@ -17,6 +17,8 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TextField,
+  Typography,
 } from "@mui/material";
 import { AppShell } from "@/app/components/app-shell";
 
@@ -26,6 +28,8 @@ export default function AdminPage() {
   const router = useRouter();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [error, setError] = useState("");
+  const [passwordUserId, setPasswordUserId] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState("");
 
   async function loadUsers() {
     const res = await fetch("/api/admin");
@@ -73,6 +77,14 @@ export default function AdminPage() {
     loadUsers();
   }
 
+  async function changePassword() {
+    if (!passwordUserId || newPassword.length < 8) { setError("كلمة المرور يجب أن تكون 8 أحرف على الأقل"); return; }
+    const res = await fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: passwordUserId, action: "password", newPassword }) });
+    const data = await res.json();
+    if (!res.ok) { setError(data.message || "تعذر تغيير كلمة المرور"); return; }
+    setPasswordUserId(null); setNewPassword(""); setError(data.message);
+  }
+
   return (
     <AppShell title="إدارة الحسابات" subtitle="راجع الحسابات وفعّل الوصول حسب الحاجة">
       <Stack spacing={3}>
@@ -100,7 +112,7 @@ export default function AdminPage() {
                     <TableCell>{user.role}</TableCell>
                     <TableCell>{user.status}</TableCell>
                     <TableCell>{user.trial_ends_at ? new Date(user.trial_ends_at).toLocaleDateString("ar-EG") : "غير محددة"}</TableCell>
-                    <TableCell><Stack direction="row" spacing={1}><Button size="small" onClick={() => openTrial(user.id)}>تجربة 30 يومًا</Button>{user.role !== "admin" ? <Button size="small" color="error" onClick={() => deleteUser(user.id)}>حذف</Button> : null}</Stack></TableCell>
+                    <TableCell><Stack direction="row" spacing={1}><Button size="small" onClick={() => openTrial(user.id)}>تفعيل 30 يومًا</Button>{user.role !== "admin" ? <><Button size="small" onClick={() => setPasswordUserId(user.id)}>تغيير كلمة المرور</Button><Button size="small" color="error" onClick={() => deleteUser(user.id)}>حذف</Button></> : null}</Stack></TableCell>
                     <TableCell>
                       <FormControl size="small" sx={{ minWidth: 120 }}>
                         <InputLabel>الحالة</InputLabel>
@@ -121,6 +133,7 @@ export default function AdminPage() {
             </Table>
           </CardContent>
         </Card>
+        {passwordUserId ? <Card><CardContent><Stack spacing={2}><Typography variant="h6">تغيير كلمة مرور الحساب</Typography><Typography variant="body2" color="text.secondary">لا يتم عرض كلمة المرور القديمة. أدخل كلمة مرور جديدة من 8 أحرف على الأقل.</Typography><TextField type="password" label="كلمة المرور الجديدة" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /><Stack direction="row" spacing={1}><Button variant="contained" onClick={changePassword}>حفظ كلمة المرور</Button><Button onClick={() => { setPasswordUserId(null); setNewPassword(""); }}>إلغاء</Button></Stack></Stack></CardContent></Card> : null}
       </Stack>
     </AppShell>
   );

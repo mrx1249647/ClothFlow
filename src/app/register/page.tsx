@@ -72,8 +72,8 @@ export default function RegisterPage() {
       return;
     }
 
-    setSuccess("تم إنشاء الحساب. أرسلنا رمز التحقق إلى بريدك الإلكتروني.");
-    setTimeout(() => router.push(`/verify-account?email=${encodeURIComponent(form.email)}`), 900);
+    setSuccess(data.message || "تم إنشاء الحساب. لديك تجربة 3 أيام، وللتفعيل الكامل تواصل مع مطور الموقع.");
+    setTimeout(() => router.push("/login"), 1400);
   }
 
   if (checkingSession) {
