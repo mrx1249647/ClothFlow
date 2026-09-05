@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Box, Button, Container, Stack, Typography } from "@mui/material";
 
 export default function HomePage() {
@@ -9,7 +8,7 @@ export default function HomePage() {
           <Typography variant="h1" sx={{ fontWeight: 900, fontSize: { xs: "3rem", md: "5rem" }, color: "primary.main" }}>ClothFlow</Typography>
           <Typography variant="h4" sx={{ fontWeight: 800 }}>إدارة مخزون ومبيعات متجر الملابس في مكان واحد</Typography>
           <Typography color="text.secondary" sx={{ maxWidth: 620 }}>منصة SaaS تساعدك على متابعة المنتجات والمبيعات والفواتير والإشعارات لكل متجر وحساب بشكل مستقل.</Typography>
-          <Button component={Link} href="/login" variant="contained" size="large">تسجيل الدخول إلى المنصة</Button>
+          <Button href="/login" variant="contained" size="large">تسجيل الدخول إلى المنصة</Button>
         </Stack>
       </Container>
     </Box>
