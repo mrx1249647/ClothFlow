@@ -10,7 +10,7 @@ import { AppShell } from "@/app/components/app-shell";
 export default function AccountPage() {
   const router = useRouter();
   const theme = useTheme();
-  const [form, setForm] = useState({ name: "", currentPassword: "", newPassword: "" });
+  const [form, setForm] = useState({ name: "", shopName: "", defaultSeller: "", currentPassword: "", newPassword: "" });
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -23,7 +23,7 @@ export default function AccountPage() {
         return;
       }
       const data = await response.json();
-      setForm((current) => ({ ...current, name: data.user.name }));
+      setForm((current) => ({ ...current, name: data.user.name, shopName: data.user.shop_name || "", defaultSeller: data.user.default_seller || "" }));
       setEmail(data.user.email);
     });
   }, [router]);
@@ -44,6 +44,15 @@ export default function AccountPage() {
     setMessage(data.passwordChanged ? "تم تحديث البيانات وكلمة المرور بنجاح" : "تم تحديث بيانات الحساب");
   }
 
+  async function deleteAccount() {
+    const password = window.prompt("أدخل كلمة المرور لتأكيد حذف الحساب");
+    if (!password) return;
+    const response = await fetch("/api/account", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) });
+    const data = await response.json();
+    if (!response.ok) { setError(data.message || "تعذر حذف الحساب"); return; }
+    router.replace("/login");
+  }
+
   return (
     <AppShell title="إعداد الحساب" subtitle="حدّث بياناتك واحتفظ بحسابك آمنًا">
       <Box sx={{ maxWidth: 640, mx: "auto" }}>
@@ -57,6 +66,8 @@ export default function AccountPage() {
             <Stack component="form" onSubmit={save} spacing={2.5}>
               <TextField label="الاسم" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
               <TextField label="البريد الإلكتروني" value={email} disabled />
+              <TextField label="اسم المحل الافتراضي للفواتير" value={form.shopName} onChange={(event) => setForm({ ...form, shopName: event.target.value })} />
+              <TextField label="اسم البائع / الموظف الافتراضي" value={form.defaultSeller} onChange={(event) => setForm({ ...form, defaultSeller: event.target.value })} />
               <Divider />
               <Typography variant="h6" sx={{ fontWeight: 800 }}>تغيير كلمة المرور</Typography>
               <TextField type="password" label="كلمة المرور الحالية" value={form.currentPassword} onChange={(event) => setForm({ ...form, currentPassword: event.target.value })} slotProps={{ input: { startAdornment: <LockRoundedIcon color="primary" sx={{ mr: 1 }} /> } }} />
@@ -64,6 +75,7 @@ export default function AccountPage() {
               {error ? <Alert severity="error">{error}</Alert> : null}
               {message ? <Alert severity="success">{message}</Alert> : null}
               <Button type="submit" variant="contained" size="large" disabled={pending}>{pending ? "جاري الحفظ..." : "حفظ التغييرات"}</Button>
+              <Button type="button" color="error" onClick={deleteAccount}>حذف حسابي نهائيًا</Button>
               <Button type="button" variant="text" onClick={() => router.push("/dashboard")}>العودة إلى لوحة التحكم</Button>
             </Stack>
           </CardContent>

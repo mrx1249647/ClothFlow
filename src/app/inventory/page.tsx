@@ -10,6 +10,10 @@ import {
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Grid,
   Stack,
   Table,
@@ -20,6 +24,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import { AppShell } from "@/app/components/app-shell";
 
 type Product = { id: string; name: string; category: string; image_url?: string | null; stock: number; price: number; sizes?: { label: string; stock: number }[] };
@@ -28,6 +34,8 @@ export default function InventoryPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState({ name: "", category: "", stock: "", price: "", imageUrl: "", sizesText: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
 
   async function loadProducts() {
@@ -53,10 +61,10 @@ export default function InventoryPage() {
       const [label, stock] = entry.split(":").map((value) => value.trim());
       return { label, stock: Number(stock) };
     }).filter((size) => size.label && Number.isInteger(size.stock) && size.stock >= 0);
-    const res = await fetch("/api/products", {
-      method: "POST",
+    const res = await fetch(editingId ? `/api/products/${editingId}` : "/api/products", {
+      method: editingId ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, sizes, stock: sizes.reduce((sum, size) => sum + size.stock, 0) }),
+      body: JSON.stringify({ ...form, sizes, stock: sizes.length ? sizes.reduce((sum, size) => sum + size.stock, 0) : Number(form.stock) }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -64,8 +72,24 @@ export default function InventoryPage() {
       return;
     }
     setForm({ name: "", category: "", stock: "", price: "", imageUrl: "", sizesText: "" });
-    setStatus("تم حفظ المنتج بنجاح");
+    setEditingId(null);
+    setStatus(editingId ? "تم تحديث المنتج بنجاح" : "تم حفظ المنتج بنجاح");
     loadProducts();
+  }
+
+  function startEditing(product: Product) {
+    setEditingId(product.id);
+    setForm({ name: product.name, category: product.category, stock: String(product.stock), price: String(product.price), imageUrl: product.image_url || "", sizesText: (product.sizes || []).map((size) => `${size.label}:${size.stock}`).join(", ") });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function deleteProduct() {
+    if (!deleteId) return;
+    const res = await fetch(`/api/products/${deleteId}`, { method: "DELETE" });
+    const data = await res.json();
+    setDeleteId(null);
+    setStatus(res.ok ? "تم حذف المنتج" : data.message || "تعذر حذف المنتج");
+    if (res.ok) loadProducts();
   }
 
   return (
@@ -74,7 +98,7 @@ export default function InventoryPage() {
 
         <Card>
           <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>إضافة منتج جديد</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>{editingId ? "تعديل المنتج" : "إضافة منتج جديد"}</Typography>
             <Box component="form" onSubmit={handleSubmit}>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -105,7 +129,10 @@ export default function InventoryPage() {
                   </Button>
                 </Grid>
                 <Grid size={{ xs: 12 }}>
-                  <Button type="submit" variant="contained">حفظ المنتج</Button>
+                  <Stack direction="row" spacing={1}>
+                    <Button type="submit" variant="contained">{editingId ? "حفظ التعديلات" : "حفظ المنتج"}</Button>
+                    {editingId ? <Button type="button" onClick={() => { setEditingId(null); setForm({ name: "", category: "", stock: "", price: "", imageUrl: "", sizesText: "" }); }}>إلغاء</Button> : null}
+                  </Stack>
                 </Grid>
               </Grid>
             </Box>
@@ -136,6 +163,7 @@ export default function InventoryPage() {
                     <TableCell>{Number(product.price).toLocaleString()} ج.م</TableCell>
                     <TableCell><Avatar src={product.image_url || undefined} variant="rounded" sx={{ width: 44, height: 44 }} /></TableCell>
                     <TableCell><Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap" }}>{product.sizes?.map((size) => <Chip key={size.label} size="small" label={`${size.label}: ${size.stock}`} />)}</Stack></TableCell>
+                    <TableCell><Stack direction="row" spacing={0.5}><Button size="small" startIcon={<EditRoundedIcon />} onClick={() => startEditing(product)}>تعديل</Button><Button size="small" color="error" startIcon={<DeleteOutlineRoundedIcon />} onClick={() => setDeleteId(product.id)}>حذف</Button></Stack></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -143,6 +171,11 @@ export default function InventoryPage() {
           </CardContent>
         </Card>
       </Stack>
+      <Dialog open={Boolean(deleteId)} onClose={() => setDeleteId(null)}>
+        <DialogTitle>حذف المنتج؟</DialogTitle>
+        <DialogContent>سيتم حذف المنتج وسجلات بيعه المرتبطة به نهائيًا.</DialogContent>
+        <DialogActions><Button onClick={() => setDeleteId(null)}>إلغاء</Button><Button color="error" variant="contained" onClick={deleteProduct}>حذف</Button></DialogActions>
+      </Dialog>
     </AppShell>
   );
 }

@@ -10,6 +10,6 @@ export async function GET() {
   }
 
   await initializeDatabase();
-  const notifications = await getNotifications(30);
+  const notifications = await getNotifications(user.id, 30);
   return NextResponse.json({ notifications });
 }

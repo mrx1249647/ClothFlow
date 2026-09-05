@@ -12,7 +12,7 @@ export async function GET() {
   }
 
   await initializeDatabase();
-  const result = await query(`SELECT * FROM products ORDER BY created_at DESC;`);
+  const result = await query(`SELECT * FROM products WHERE owner_id = $1 ORDER BY created_at DESC;`, [user.id]);
   return NextResponse.json({ products: result.rows, user });
 }
 
@@ -34,16 +34,17 @@ export async function POST(request: Request) {
 
     const { name, category, stock, price, imageUrl } = parsed.data;
     const result = await query(
-      `INSERT INTO products (name, category, stock, price, image_url, sizes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;`,
-      [name, category, stock, price, imageUrl || null, JSON.stringify(parsed.data.sizes)],
+      `INSERT INTO products (owner_id, name, category, stock, price, image_url, sizes) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;`,
+      [user.id, name, category, stock, price, imageUrl || null, JSON.stringify(parsed.data.sizes)],
     );
 
-    await logNotification({
+    await logNotification(user.id, {
       type: "product",
       title: "تمت إضافة منتج جديد",
       description: `${name} بإجمالي ${stock} قطعة في المخزون`,
+      details: { name, category, stock, price, imageUrl: imageUrl || null, sizes: parsed.data.sizes },
     });
-    await logAudit(`${user.name} أضاف منتجًا جديدًا: ${name}`);
+    await logAudit(user.id, `${user.name} أضاف منتجًا جديدًا: ${name}`);
 
     return NextResponse.json({ product: result.rows[0], message: "تم حفظ المنتج" }, { status: 201 });
   } catch (error) {

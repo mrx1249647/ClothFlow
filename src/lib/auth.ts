@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
+import { query } from "@/lib/db";
 
 export type SessionUser = {
   id: string;
@@ -7,6 +8,9 @@ export type SessionUser = {
   email: string;
   role: "admin" | "manager";
   avatarUrl?: string | null;
+  shopName?: string | null;
+  defaultSeller?: string | null;
+  trialEndsAt?: string | null;
 };
 
 const getJwtSecret = () => {
@@ -24,6 +28,9 @@ export async function createSessionToken(user: SessionUser) {
     name: user.name,
     role: user.role,
     avatarUrl: user.avatarUrl,
+    shopName: user.shopName,
+    defaultSeller: user.defaultSeller,
+    trialEndsAt: user.trialEndsAt,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -40,6 +47,9 @@ export async function verifySessionToken(token: string) {
     email: String(payload.email ?? ""),
     role: String(payload.role ?? "manager") as SessionUser["role"],
     avatarUrl: payload.avatarUrl ? String(payload.avatarUrl) : null,
+    shopName: payload.shopName ? String(payload.shopName) : null,
+    defaultSeller: payload.defaultSeller ? String(payload.defaultSeller) : null,
+    trialEndsAt: payload.trialEndsAt ? String(payload.trialEndsAt) : null,
   } satisfies SessionUser;
 }
 
@@ -52,7 +62,12 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   }
 
   try {
-    return await verifySessionToken(token);
+    const user = await verifySessionToken(token);
+    const result = await query(`SELECT status, trial_ends_at FROM users WHERE id = $1;`, [user.id]);
+    const account = result.rows[0];
+    if (!account || account.status !== "active") return null;
+    if (user.role !== "admin" && account.trial_ends_at && new Date(String(account.trial_ends_at)) < new Date()) return null;
+    return user;
   } catch {
     return null;
   }

@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const result = await query(
-      `INSERT INTO users (name, email, password_hash, role, status, email_verified) VALUES ($1, $2, $3, 'manager', 'active', true) RETURNING id, name, email, role, status;`,
+      `INSERT INTO users (name, email, password_hash, role, status, email_verified, trial_ends_at) VALUES ($1, $2, $3, 'manager', 'active', true, NOW() + INTERVAL '30 days') RETURNING id, name, email, role, status, trial_ends_at;`,
       [name, email, passwordHash],
     );
 

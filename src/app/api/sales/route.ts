@@ -13,7 +13,7 @@ export async function GET() {
   }
 
   await initializeDatabase();
-  const result = await query(`SELECT s.*, p.name AS product_name FROM sales s JOIN products p ON p.id = s.product_id ORDER BY s.created_at DESC;`);
+  const result = await query(`SELECT s.*, p.name AS product_name, p.image_url FROM sales s JOIN products p ON p.id = s.product_id WHERE s.owner_id = $1 ORDER BY s.created_at DESC;`, [user.id]);
   return NextResponse.json({ sales: result.rows });
 }
 
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     const orderId = randomUUID();
     const lines: { product: { id: string; name: string; price: number; stock: number; sizes?: { label: string; stock: number }[] }; size: string; quantity: number; subtotal: number }[] = [];
     for (const item of items) {
-      const productResult = await query(`SELECT * FROM products WHERE id = $1;`, [item.productId]);
+      const productResult = await query(`SELECT * FROM products WHERE id = $1 AND owner_id = $2;`, [item.productId, user.id]);
       const product = productResult.rows[0] as { id: string; name: string; price: number; stock: number; sizes?: { label: string; stock: number }[] } | undefined;
       if (!product) return NextResponse.json({ message: "أحد المنتجات غير موجود" }, { status: 404 });
       const size = product.sizes?.find((availableSize) => availableSize.label === item.size);
@@ -49,18 +49,19 @@ export async function POST(request: Request) {
     const saleResults = [];
     for (const line of lines) {
       const lineDiscount = subtotal ? discount * (line.subtotal / subtotal) : 0;
-      const saleResult = await query(`INSERT INTO sales (product_id, quantity, total, customer, sold_by, order_id, discount, discount_reason, size, shop_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;`, [line.product.id, line.quantity, line.subtotal - lineDiscount, customer, soldBy, orderId, lineDiscount, discountReason || null, line.size, shopName]);
+      const saleResult = await query(`INSERT INTO sales (owner_id, product_id, quantity, total, customer, sold_by, order_id, discount, discount_reason, size, shop_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *;`, [user.id, line.product.id, line.quantity, line.subtotal - lineDiscount, customer, soldBy, orderId, lineDiscount, discountReason || null, line.size, shopName]);
       saleResults.push(saleResult.rows[0]);
       const updatedSizes = (line.product.sizes || []).map((availableSize) => availableSize.label === line.size ? { ...availableSize, stock: availableSize.stock - line.quantity } : availableSize);
-      await query(`UPDATE products SET stock = stock - $1, sizes = $2 WHERE id = $3;`, [line.quantity, JSON.stringify(updatedSizes), line.product.id]);
+      await query(`UPDATE products SET stock = stock - $1, sizes = $2 WHERE id = $3 AND owner_id = $4;`, [line.quantity, JSON.stringify(updatedSizes), line.product.id, user.id]);
     }
     const total = subtotal - discount;
-    await logNotification({
+    await logNotification(user.id, {
       type: "sale",
       title: "تمت عملية بيع جديدة",
       description: `${customer} اشترى ${items.length} منتجات بقيمة ${total} ج.م`,
+      details: { customer, soldBy, shopName, total, discount, discountReason: discountReason || "بدون سبب", items: lines.map((line) => ({ name: line.product.name, imageUrl: (line.product as { image_url?: string | null }).image_url || null, size: line.size, quantity: line.quantity, subtotal: line.subtotal })) },
     });
-    await logAudit(`${user.name} سجل فاتورة بيع للعميل: ${customer}`);
+    await logAudit(user.id, `${user.name} سجل فاتورة بيع للعميل: ${customer}`);
 
     return NextResponse.json({ sales: saleResults, total, message: "تم تسجيل البيع بنجاح" }, { status: 201 });
   } catch (error) {

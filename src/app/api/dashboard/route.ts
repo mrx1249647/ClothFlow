@@ -11,10 +11,10 @@ export async function GET() {
 
   await initializeDatabase();
   const [stats, products, sales, notifications, users] = await Promise.all([
-    getDashboardStats(),
-    getProducts(),
-    getSales(),
-    getNotifications(10),
+    getDashboardStats(user.id),
+    getProducts(user.id),
+    getSales(user.id),
+    getNotifications(user.id, 10),
     getUsers(),
   ]);
 

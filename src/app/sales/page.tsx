@@ -12,7 +12,7 @@ import { AppShell } from "@/app/components/app-shell";
 type Size = { label: string; stock: number };
 type Product = { id: string; name: string; category: string; stock: number; price: number; image_url?: string | null; sizes?: Size[] };
 type CartLine = { product: Product; size: string; quantity: number };
-type Invoice = { id: string; total: number; subtotal: number; discount: number; lines: CartLine[] };
+type Invoice = { id: string; total: number; subtotal: number; discount: number; discountReason: string; lines: CartLine[] };
 
 export default function SalesPage() {
   const router = useRouter();
@@ -28,6 +28,12 @@ export default function SalesPage() {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
+    fetch("/api/auth/session", { cache: "no-store" }).then(async (response) => {
+      if (!response.ok) { router.push("/login"); return; }
+      const session = await response.json();
+      setShopName(session.user.shopName || "");
+      setSoldBy(session.user.defaultSeller || "");
+    });
     fetch("/api/products").then(async (response) => {
       if (!response.ok) { router.push("/login"); return; }
       setProducts((await response.json()).products || []);
@@ -61,11 +67,12 @@ export default function SalesPage() {
     event.preventDefault();
     setStatus("");
     const savedLines = cart;
+    await fetch("/api/account", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shopName, defaultSeller: soldBy }) });
     const response = await fetch("/api/sales", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items: savedLines.map((line) => ({ productId: line.product.id, size: line.size, quantity: line.quantity })), customer, soldBy, discount: discountValue, discountReason, shopName }) });
     const data = await response.json();
     if (!response.ok) { setStatus(data.message || "تعذر إتمام البيع"); return; }
     setStatus("تم تسجيل الفاتورة بنجاح");
-    setInvoice({ id: data.sales?.[0]?.order_id || "", total, subtotal, discount: discountValue, lines: savedLines });
+    setInvoice({ id: data.sales?.[0]?.order_id || "", total, subtotal, discount: discountValue, discountReason: discountReason || "بدون سبب", lines: savedLines });
     setCart([]); setCustomer(""); setDiscount("0"); setDiscountReason("");
     const refreshed = await fetch("/api/products");
     if (refreshed.ok) setProducts((await refreshed.json()).products || []);
@@ -92,7 +99,7 @@ export default function SalesPage() {
             <Divider /><Stack spacing={0.75}><Typography>إجمالي عدد المنتجات: <strong>{totalQuantity}</strong></Typography><Typography>إجمالي المنتجات: <strong>{subtotal.toLocaleString()} ج.م</strong></Typography><Typography>الخصم: <strong>{discountValue.toLocaleString()} ج.م</strong></Typography><Typography variant="h6">المبلغ المطلوب: <strong>{total.toLocaleString()} ج.م</strong></Typography></Stack>
             {status ? <Alert severity={status.includes("نجاح") ? "success" : "error"}>{status}</Alert> : null}<Button type="submit" variant="contained" size="large" disabled={!cart.length}>تأكيد البيع</Button>
           </Stack></Box></CardContent></Card>
-          {invoice ? <Card className="invoice-print" sx={{ mt: 2 }}><CardContent><Typography variant="h6" sx={{ fontWeight: 800 }}>{shopName}</Typography><Typography>فاتورة رقم: {invoice.id}</Typography><Divider sx={{ my: 1 }} />{invoice.lines.map((line) => <Stack key={`${line.product.id}-${line.size}`} direction="row" sx={{ justifyContent: "space-between" }}><Typography>{line.product.name} · {line.size} × {line.quantity}</Typography><Typography>{(Number(line.product.price) * line.quantity).toLocaleString()} ج.م</Typography></Stack>)}<Divider sx={{ my: 1 }} /><Typography>الإجمالي: {invoice.subtotal.toLocaleString()} ج.م</Typography><Typography>الخصم: {invoice.discount.toLocaleString()} ج.م</Typography><Typography variant="h6">المبلغ المطلوب: {invoice.total.toLocaleString()} ج.م</Typography><Button onClick={() => window.print()} sx={{ mt: 1 }}>طباعة / حفظ PDF</Button></CardContent></Card> : null}
+          {invoice ? <Card className="invoice-print" sx={{ mt: 2 }}><CardContent><Typography variant="h6" sx={{ fontWeight: 800 }}>{shopName}</Typography><Typography>فاتورة رقم: {invoice.id}</Typography><Divider sx={{ my: 1 }} />{invoice.lines.map((line) => <Stack key={`${line.product.id}-${line.size}`} direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}><Stack direction="row" spacing={1} sx={{ alignItems: "center" }}><Avatar src={line.product.image_url || undefined} variant="rounded" /><Typography>{line.product.name} · {line.size} × {line.quantity}</Typography></Stack><Typography>{(Number(line.product.price) * line.quantity).toLocaleString()} ج.م</Typography></Stack>)}<Divider sx={{ my: 1 }} /><Typography>الإجمالي: {invoice.subtotal.toLocaleString()} ج.م</Typography><Typography>الخصم: {invoice.discount.toLocaleString()} ج.م</Typography><Typography>سبب الخصم: {invoice.discountReason}</Typography><Typography variant="h6">المبلغ المطلوب: {invoice.total.toLocaleString()} ج.م</Typography><Button onClick={() => window.print()} sx={{ mt: 1 }}>طباعة / حفظ PDF</Button></CardContent></Card> : null}
         </Grid>
       </Grid>
     </AppShell>
