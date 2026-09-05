@@ -182,7 +182,7 @@ export default function LoginPage() {
 
                       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <FormControlLabel control={<Checkbox defaultChecked />} label="تذكرني" />
-                        <Link href="#" underline="hover" sx={{ fontWeight: 700 }}>نسيت كلمة المرور؟</Link>
+                        <Link href="/forgot-password" underline="hover" sx={{ fontWeight: 700 }}>نسيت كلمة المرور؟</Link>
                       </Box>
 
                       {error ? <Alert severity="error">{error}</Alert> : null}

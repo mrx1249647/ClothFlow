@@ -27,7 +27,10 @@ export async function initializeDatabase() {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name TEXT NOT NULL, email TEXT NOT NULL UNIQUE,
         password_hash TEXT, role TEXT NOT NULL DEFAULT 'manager', status TEXT NOT NULL DEFAULT 'pending',
         email_verified BOOLEAN NOT NULL DEFAULT false, google_id TEXT UNIQUE, avatar_url TEXT,
-        verification_token TEXT, verification_expires TIMESTAMPTZ, shop_name TEXT, default_seller TEXT,
+        verification_token TEXT, verification_expires TIMESTAMPTZ,
+        email_verification_code_hash TEXT, email_verification_code_expires TIMESTAMPTZ,
+        password_reset_code_hash TEXT, password_reset_code_expires TIMESTAMPTZ, password_reset_attempts INTEGER NOT NULL DEFAULT 0,
+        shop_name TEXT, default_seller TEXT,
         trial_ends_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );`);
       const columns = await query(`SELECT column_name FROM information_schema.columns WHERE table_name = 'users';`);
@@ -37,6 +40,11 @@ export async function initializeDatabase() {
       if (!names.has("email_verified")) await query(`ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT false;`);
       if (!names.has("verification_token")) await query(`ALTER TABLE users ADD COLUMN verification_token TEXT;`);
       if (!names.has("verification_expires")) await query(`ALTER TABLE users ADD COLUMN verification_expires TIMESTAMPTZ;`);
+      if (!names.has("email_verification_code_hash")) await query(`ALTER TABLE users ADD COLUMN email_verification_code_hash TEXT;`);
+      if (!names.has("email_verification_code_expires")) await query(`ALTER TABLE users ADD COLUMN email_verification_code_expires TIMESTAMPTZ;`);
+      if (!names.has("password_reset_code_hash")) await query(`ALTER TABLE users ADD COLUMN password_reset_code_hash TEXT;`);
+      if (!names.has("password_reset_code_expires")) await query(`ALTER TABLE users ADD COLUMN password_reset_code_expires TIMESTAMPTZ;`);
+      if (!names.has("password_reset_attempts")) await query(`ALTER TABLE users ADD COLUMN password_reset_attempts INTEGER NOT NULL DEFAULT 0;`);
       if (!names.has("shop_name")) await query(`ALTER TABLE users ADD COLUMN shop_name TEXT;`);
       if (!names.has("default_seller")) await query(`ALTER TABLE users ADD COLUMN default_seller TEXT;`);
       if (!names.has("trial_ends_at")) await query(`ALTER TABLE users ADD COLUMN trial_ends_at TIMESTAMPTZ;`);
