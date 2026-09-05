@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
-import { query } from "@/lib/db";
+import { initializeDatabase, query } from "@/lib/db";
 
 export type SessionUser = {
   id: string;
@@ -62,6 +62,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   }
 
   try {
+    await initializeDatabase();
     const user = await verifySessionToken(token);
     const result = await query(`SELECT status, trial_ends_at FROM users WHERE id = $1;`, [user.id]);
     const account = result.rows[0];
